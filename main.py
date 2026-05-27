@@ -139,9 +139,13 @@ async def convert_resume_url(request: dict):
     """
     file_url = request.get("file_url")
     filename = request.get("filename", "resume.docx")
-    
+
     if not file_url:
         raise HTTPException(status_code=400, detail="缺少file_url参数")
+
+    # 补全相对路径
+    if not file_url.startswith("http://") and not file_url.startswith("https://"):
+        file_url = "http://10.31.25.96:32300/api/proxy/down?Action=Download&Version=2022-01-01&IsAnonymous=true&Path=" + file_url
 
     # 下载文件
     async with httpx.AsyncClient() as client:
