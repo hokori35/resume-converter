@@ -83,15 +83,15 @@ async def convert_resume(file: UploadFile = File(...)):
         result_path = result_dir / f"{name}_学术业绩简表.docx"
         shutil.copy(output_path, result_path)
 
-    # 生成下载链接
-download_url = f"https://resume-converter-production-983c.up.railway.app/download/{result_path.name}"
+       # 生成下载链接
+       download_url = f"https://resume-converter-production-983c.up.railway.app/download/{result_path.name}"
 
-return {
-    "status": "success",
-    "filename": result_path.name,
-    "download_url": download_url
+       return {
+             "status": "success",
+             "filename": result_path.name,
+            "download_url": download_url
 }
-    )
+    
 from fastapi.responses import FileResponse as FR
 
 @app.get("/download/{filename}")
