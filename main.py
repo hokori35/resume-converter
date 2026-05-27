@@ -130,7 +130,71 @@ async def convert_resume(file: UploadFile = File(...)):
 
 
 from fastapi.responses import FileResponse as FR
+import httpx
 
+@app.post("/convert-resume-url")
+async def convert_resume_url(request: dict):
+    """
+    接收文件URL，下载后转换
+    """
+    file_url = request.get("file_url")
+    filename = request.get("filename", "resume.docx")
+    
+    if not file_url:
+        raise HTTPException(status_code=400, detail="缺少file_url参数")
+
+    # 下载文件
+    async with httpx.AsyncClient() as client:
+        response = await client.get(file_url, timeout=30)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="文件下载失败")
+        file_content = response.content
+
+    if not filename.endswith(".docx"):
+        filename = "resume.docx"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        input_path = tmpdir / filename
+
+        with open(input_path, "wb") as f:
+            f.write(file_content)
+
+        try:
+            resume_dict = extract_one(input_path)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"简历解析失败：{str(e)}")
+
+        json_path = tmpdir / "resume.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(resume_dict, f, ensure_ascii=False, indent=2)
+
+        output_path = tmpdir / "output.docx"
+        try:
+            fill_template(
+                template_path=str(TEMPLATE_PATH),
+                data_json=str(json_path),
+                output_path=str(output_path),
+                compact=False,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"简历生成失败：{str(e)}")
+
+        result_dir = Path(__file__).parent / "results"
+        result_dir.mkdir(exist_ok=True)
+        name = resume_dict.get("basic_info", {}).get("name", "简历")
+        result_path = result_dir / f"{name}_学术业绩简表.docx"
+        shutil.copy(output_path, result_path)
+
+    download_url = (
+        "https://resume-converter-production-983c.up.railway.app"
+        f"/download/{result_path.name}"
+    )
+    return {
+        "status": "success",
+        "filename": result_path.name,
+        "download_url": download_url
+    }
 
 @app.get("/download/{filename}")
 def download_file(filename: str):
