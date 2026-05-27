@@ -83,12 +83,28 @@ async def convert_resume(file: UploadFile = File(...)):
         result_path = result_dir / f"{name}_学术业绩简表.docx"
         shutil.copy(output_path, result_path)
 
-    return FileResponse(
-        path=str(result_path),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=result_path.name,
-    )
+    # 生成下载链接
+download_url = f"https://resume-converter-production-983c.up.railway.app/download/{result_path.name}"
 
+return {
+    "status": "success",
+    "filename": result_path.name,
+    "download_url": download_url
+}
+    )
+from fastapi.responses import FileResponse as FR
+
+@app.get("/download/{filename}")
+def download_file(filename: str):
+    result_dir = Path(__file__).parent / "results"
+    file_path = result_dir / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="文件不存在")
+    return FR(
+        path=str(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=filename,
+    )
 
 @app.post("/extract-json")
 async def extract_json(file: UploadFile = File(...)):
