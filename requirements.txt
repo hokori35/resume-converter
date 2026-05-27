@@ -3,3 +3,4 @@ uvicorn
 python-multipart
 python-docx
 lxml
+httpx
