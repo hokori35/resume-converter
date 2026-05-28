@@ -3,6 +3,7 @@ import json
 import tempfile
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -117,7 +118,6 @@ async def convert_resume(file: UploadFile = File(...)):
         shutil.copy(output_path, result_path)
 
     # 生成下载链接
-from urllib.parse import quote
     download_url = (
         "https://resume-converter-production-983c.up.railway.app"
         f"/download/{quote(result_path.name)}"
@@ -193,7 +193,7 @@ async def convert_resume_url(request: dict):
 
     download_url = (
         "https://resume-converter-production-983c.up.railway.app"
-        f"/download/{result_path.name}"
+        f"/download/{quote(result_path.name)}"
     )
     return {
         "status": "success",
